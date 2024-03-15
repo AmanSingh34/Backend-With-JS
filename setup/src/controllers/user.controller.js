@@ -47,7 +47,10 @@ const userRegister = asyncHandler( async (req,res) => {
     
     //4. Check for images, avatar
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverimageLocalPath = req.files?.coverimage[0]?.path;
+    let coverimageLocalPath;
+    if (req.files && Array.isArray(req.files.coverimage) && req.files.coverimage.length > 0) {
+        coverimageLocalPath = req.files.coverimage[0].path
+    }
     if(!avatarLocalPath){
         throw new ApiErrors(400,"Avatar file is required")
     }
@@ -137,8 +140,8 @@ const logoutUser = asyncHandler(async (req,res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{
-                refreshToken:undefined
+            $unset:{
+                refreshToken:1
             }
         },
         {
@@ -226,7 +229,7 @@ const getCurrentUser = asyncHandler(async(req,res)=>{
     return res
     .status(200)
     .json(
-        new ApiResponse(200,{},"user Fetched Successfully")
+        new ApiResponse(200,req?.user,"user Fetched Successfully")
     )
 })
 
@@ -262,6 +265,7 @@ const updateUserAvatar = asyncHandler(async (req,res)=>{
     if(!avatarLocalPath){
         throw new ApiErrors(400,"Avatar file is missing")
     }
+
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     if(!avatar.url){
         throw new ApiErrors(400,"Error occured while Uploading avatar")
